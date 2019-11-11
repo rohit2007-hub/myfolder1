@@ -1,0 +1,166 @@
+import requests
+
+import json
+
+
+def auth(tenant_id, client_id, client_secret):
+
+    print('auth')
+
+    auth_headers = {
+
+        "Content-Type": "application/x-www-form-urlencoded"
+
+    }
+
+    auth_body = {
+
+        "client_id": client_id,
+
+        "client_secret": client_secret,
+
+        "scope" : "https://storage.azure.com/.default",
+
+        "grant_type" : "client_credentials"
+
+    }
+
+    resp = requests.post(f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token", headers=auth_headers, data=auth_body)
+
+    return (resp.status_code, json.loads(resp.text))
+
+    
+
+    
+
+def touch_file(account_name, fs_name, dir_name, file_name, access_token):
+
+    print('touch_file')
+
+    touch_file_headers = {
+
+        "Content-Length" : "0",
+
+        "x-ms-version": "2018-11-09",
+
+        "Authorization": "Bearer "+access_token
+
+    }
+
+    resp = requests.put(f"https://{account_name}.dfs.core.windows.net/{fs_name}/{dir_name}/{file_name}?resource=file", headers=touch_file_headers)
+
+    return (resp.status_code, resp.text)
+
+    
+
+  
+
+def append_file(account_name, fs_name, path, content, position, access_token):
+
+    print('append_file')
+
+    content
+
+    append_file_headers = {
+
+        "Authorization": f"Bearer {access_token}",
+
+        "Content-Type": "text/plain",
+
+        "Content-Length": f"{len(content)}"
+
+    }
+
+    resp = requests.patch(f"https://{account_name}.dfs.core.windows.net/{fs_name}/{path}?action=append&position={position}", headers=append_file_headers, data=content)
+
+    return (resp.status_code, resp.text)
+
+
+def flush_file(account_name, fs_name, path, position, access_token):
+    print('flush_file')
+    flush_file_headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+    resp = requests.patch(f"https://{account_name}.dfs.core.windows.net/{fs_name}/{path}?action=flush&position={position}", headers=flush_file_headers)
+    return (resp.status_code, resp.text)
+
+
+
+def mkfile(account_name, fs_name, dir_name, file_name, local_file_name, access_token):
+
+    print('mkfile')
+
+    status_code, result = touch_file(account_name, fs_name, dir_name, file_name, access_token)
+
+    print(status_code)
+    if status_code == 201:
+
+        with open(local_file_name, 'rb') as local_file:
+
+            path = f"{dir_name}/{file_name}"
+
+            content = local_file.read()
+            print(content)
+
+            position = '0'
+
+            scode,res = append_file(account_name, fs_name, path, content, position, access_token)
+            print(scode)
+            position = len(content)
+
+            flush_file(account_name, fs_name, path, position, access_token)
+
+    else:
+
+        print(result)
+
+
+
+
+
+
+
+if __name__ == '__main__':
+
+   
+
+
+
+    client_id='fff8dd07-17b5-48ae-a696-71d783534b2b'
+
+    client_secret='KN[.=PC:U92pF423JOp4G0:De[@R.47@'    
+
+    tenant_id='f7bb915e-ccfb-4f94-bbd0-cf26e890ad83'
+
+    account_name='adlsneg2'	
+
+    fs_name='root'
+
+    dir_name='root'
+
+    file_name=input("enter name of file :: ")
+
+    local_file_name='C:\\Users\\rohit\\Documents\\diwakar.txt'
+
+    
+
+   
+
+    # Acquire an Access token
+
+    auth_status_code, auth_result = auth(tenant_id, client_id, client_secret)
+
+    access_token = auth_status_code == 200 and auth_result['access_token'] or ''
+
+    print(access_token)
+
+
+
+    
+
+    mkfile(account_name, fs_name, dir_name, file_name, local_file_name, access_token)
+
+    
+
+ 
+
